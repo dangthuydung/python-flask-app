@@ -1,0 +1,32 @@
+name: python-flask
+on:
+  push:
+    branches: 
+      - "main"
+jobs:
+  deploy:
+    env:
+      ENVIRONMENT: dev
+    runs-on: ubuntu-latest
+    steps:
+      - name: "code: check out code"
+        uses: actions/checkout@v2
+
+      - name: Generate deployment package
+        run: zip -r application.zip application.py
+
+      - name: Get version
+        id: get_version
+        run: |
+          echo "::set-output name=VERSION::$(git rev-parse --short HEAD)"
+
+      - name: Deploy to EB
+        uses: einaregilsson/beanstalk-deploy@v20
+        with:
+          aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          application_name: EB-python-flask-123
+          environment_name: EB-python-flask-env-123
+          version_label: "${{ steps.get_version.outputs.VERSION }}"
+          use_existing_version_if_available: true
+          deployment_package: application.zip
